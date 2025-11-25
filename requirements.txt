@@ -1,1 +1,2 @@
 rich
+pygame>=2.1

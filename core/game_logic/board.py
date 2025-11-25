@@ -1,128 +1,98 @@
-from rich.console import Console
-from rich.table   import Table
-from rich.text    import Text
-
+# board.py
 class Board:
-  def __init__(self):
-    self.__cells = dict()
-    for i in range(1, 69):
-      self.__cells[i] = []
-    
-    self.__safe_cells = [5, 12, 17, 22, 29, 34, 39, 46, 51, 56, 63, 68]
+    def __init__(self):
+        # id_ficha -> (row, col)
+        self.piece_positions = {}
+        self.white_path = self.create_white_path()
+        self.color_paths = self.create_color_paths()
+        self.exit_positions = {1:(2,6), 2:(6,12), 3:(8,2), 4:(12,8)}  # salidas por color
 
-    self.__start_cells = {
-      1 : 5,
-      2 : 22,
-      3 : 39,
-      4 : 56
-    }
+    # ----- Rutas -----
+    def create_white_path(self):
+        path = []
+        for col in range(1, 14):
+            path.append((7, col))
+        for row in range(6, -1, -1):
+            path.append((row, 13))
+        for col in range(12, 0, -1):
+            path.append((0, col))
+        for row in range(1, 7):
+            path.append((row, 0))
+        return path
 
-    self.__final_cells = {
-      1 : 68,
-      2 : 17,
-      3 : 34,
-      4 : 51
-    }
-  
-    self.__jails = {
-      1 : [11, 12, 13, 14],
-      2 : [21, 22, 23, 24],
-      3 : [31, 32, 33, 34],
-      4 : [41, 42, 43, 44]
-    }
+    def create_color_paths(self):
+        paths = {}
+        paths[1] = [(i,7) for i in range(0,7)]     # rojo
+        paths[2] = [(7,i) for i in range(14,7,-1)] # azul
+        paths[3] = [(7,i) for i in range(0,7)]    # verde
+        paths[4] = [(i,7) for i in range(14,7,-1)]# amarillo
+        return paths
 
-    self.__ends = {
-      1: { 101: [], 102: [], 103: [], 104: [], 105: [], 106: [], 107: [] },
-      2: { 201: [], 102: [], 103: [], 104: [], 105: [], 106: [], 107: [] },
-      3: { 301: [], 102: [], 103: [], 104: [], 105: [], 106: [], 107: [] },
-      4: { 401: [], 102: [], 103: [], 104: [], 105: [], 106: [], 107: [] },
-    }
+    # ----- Base y salida -----
+    def get_base_position(self, piece_id):
+        pid = self.get_player_id(piece_id)
+        bases = {1:(0,0),2:(0,14),3:(14,0),4:(14,14)}
+        return bases[pid]
 
-  def get_cells(self):
-    return self.__cells
-  
-  def get_start_cells(self):
-    return self.__start_cells
+    def get_start_path_position(self, piece_id):
+        pid = self.get_player_id(piece_id)
+        # devuelve la casilla de salida del color
+        return self.exit_positions[pid]
 
-  def is_safe_cell(self, cell):
-    return cell in self.__safe_cells
-  
-  def has_capured_pieces(self, player_id):
-    return len(self.__jails[player_id]) > 0
-  
-  def release_pieces(self, player_id):
-    start_cell = self.__start_cells[player_id]
+    def get_player_id(self, piece_id):
+        return piece_id // 10
 
-    self.__cells[start_cell] = self.__jails[player_id]
-    self.__jails[player_id] = []
-  
-  def __remove_piece(self, piece_id):
-    for cell in self.__cells:
-      if piece_id in self.__cells[cell]:
-        self.__cells[cell].remove(piece_id)
-        return cell
+    # ----- Liberar fichas -----
+    def release_pieces(self, player_id):
+        for i in range(1,5):
+            pid = player_id*10 + i
+            self.piece_positions[pid] = self.get_base_position(pid)
 
-    # for cell in self.__ends[piece_id // 10]:
-    #   if piece_id in self.__ends[piece_id // 10][cell]:
-    #     self.__ends[piece_id // 10][cell].remove(piece_id)
-    #     return cell
-    
-    return None
-  
-  def __capture_piece(self, piece_id, new_cell):
-    if self.is_safe_cell(new_cell):
-      return
+    # ----- Movimiento -----
+    def move_piece(self, piece_id, steps, is_pair=False):
+        if piece_id not in self.piece_positions:
+            return None
+        pos = self.piece_positions[piece_id]
+        base = self.get_base_position(piece_id)
 
-    occupants = self.__cells[new_cell]
+        # Si está en casa solo sale con par
+        if pos == base:
+            if not is_pair:
+                return None
+            else:
+                # Sale a su casilla de salida
+                new_pos = self.get_start_path_position(piece_id)
+                self.piece_positions[piece_id] = new_pos
+                return new_pos
 
-    for occupant in occupants:
-      if (piece_id // 10) != (occupant // 10):
-        self.__remove_piece(occupant)
-        self.__jails[occupant // 10].append(occupant)
-        print(f"'{occupant}' captured by '{piece_id}'\n")
-  
-  def move_piece(self, piece_id, value):
-    current_cell = self.__remove_piece(piece_id)
+        # Camino blanco
+        if pos in self.white_path:
+            idx = self.white_path.index(pos)
+            new_idx = idx + steps
+            if new_idx < len(self.white_path):
+                new_pos = self.white_path[new_idx]
+            else:
+                overflow = new_idx - len(self.white_path)
+                pid = self.get_player_id(piece_id)
+                color_path = self.color_paths[pid]
+                if overflow < len(color_path):
+                    new_pos = color_path[overflow]
+                else:
+                    new_pos = color_path[-1]  # meta
+            self.piece_positions[piece_id] = new_pos
+            return new_pos
 
-    in_jail_or_finished = current_cell is None
-    if in_jail_or_finished:
-      return None
+        # Camino de color
+        pid = self.get_player_id(piece_id)
+        color_path = self.color_paths[pid]
+        if pos in color_path:
+            idx = color_path.index(pos)
+            new_idx = min(idx + steps, len(color_path)-1)
+            new_pos = color_path[new_idx]
+            self.piece_positions[piece_id] = new_pos
+            return new_pos
 
-    new_cell = current_cell + value
-    new_cell = new_cell - 68 if new_cell > 68 else new_cell
+        return None
 
-    self.__capture_piece(piece_id, new_cell)
-    self.__cells[new_cell].append(piece_id)
-    return new_cell
-  
-  def print_jails(self):
-    print("Jails")
-    for key, value in self.__jails.items():
-      print(f"{key} : {value}")
-    print("\n")
-  
-  def print_ends(self):
-    print("Ends")
-    for key, value in self.__ends.items():
-      print(f"{key} : {value}")
-    print("\n")
-
-  def print(self, group_size=8):
-    console = Console()
-    table = Table(show_header=False)
-
-    cells = list(self.__cells.items())
-    for i in range(0, len(cells), group_size):
-      row = []
-      for key, value in cells[i:i + group_size]:
-        if self.is_safe_cell(key):
-          cell_info = f"[green]{key}: [/green]"
-        elif key in self.__start_cells.values():
-          cell_info = f"[orange]{key}: [/orange]"
-        else:
-          cell_info = f"[cyan]{key}: [/cyan]"
-        cell_info += ", ".join(str(v) for v in value) if value else "[grey]—[/grey]"
-        row.append(cell_info)
-      table.add_row(*row)
-
-    console.print(table)
+    def get_piece_position(self, piece_id):
+        return self.piece_positions.get(piece_id,None)
