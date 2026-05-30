@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
+  <g transform="matrix(1.129032, 0, 0, 1.129032, -0.8, -0.799998)" style="transform-origin: 0.8px 0.799998px;">
+    <ellipse style="vector-effect: non-scaling-stroke; paint-order: fill; stroke-miterlimit: 1; stroke-width: 0px; stroke: rgb(0, 0, 0);" cx="7" cy="7" rx="6.2" ry="6.2"/>
+  </g>
+  <g transform="matrix(0.967742, 0, 0, 0.967742, 0.199999, 0.199999)" style="transform-origin: 0.8px 0.8px;">
+    <ellipse style="vector-effect: non-scaling-stroke; paint-order: fill; stroke: rgb(0, 0, 0); stroke-miterlimit: 1; stroke-width: 0px; fill: rgb(255, 255, 255);" cx="7" cy="7" rx="6.2" ry="6.2"/>
+  </g>
+  <g transform="matrix(0.806452, 0, 0, 0.806452, 1.199997, 1.199997)" style="transform-origin: 0.8px 0.8px;">
+    <ellipse style="vector-effect: non-scaling-stroke; paint-order: fill; stroke: rgb(0, 0, 0); stroke-miterlimit: 1; stroke-width: 0px; fill: rgb(254, 240, 78);" cx="7" cy="7" rx="6.2" ry="6.2"/>
+  </g>
+</svg>
